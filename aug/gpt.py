@@ -58,15 +58,15 @@ def get_prompt(
 
 
 def get_generated_value(generator, prompt, min_max_v, num_return_sequences=1):
-    if num_return_sequences == 1:
-        do_sample = False
-    else:
-        do_sample = True
+    # if num_return_sequences == 1:
+    #     do_sample = False
+    # else:
+    do_sample = True
 
     outputs = generator(
         prompt,
         #  max_length=1024,
-        max_new_tokens=1,
+        max_new_tokens=5,
         num_return_sequences=num_return_sequences,
         do_sample=do_sample,
     )
@@ -75,7 +75,7 @@ def get_generated_value(generator, prompt, min_max_v, num_return_sequences=1):
         next_word = g[len(prompt) + 1 :].split(" ")[0]
         # next_num_str =  "".join(filter(str.isnumeric, next_word))
         next_num_str = re.sub("[^0-9.]", "", next_word).replace("..", ".")
-        if len(next_num_str.replace(".", "")) > 0:
+        if next_num_str.count(".") <= 1 and len(next_num_str.replace(".", "")) > 0:
             v = float(next_num_str)
             # check if v in the range
             min_v, max_v = min_max_v
@@ -120,10 +120,10 @@ def aug_df(
             v = progressive_aug(
                 generator, prompt, aug_feature_range[f], progress=progress
             )
-            if v is None:
-                print(
-                    f"Couldn't find value for [{idx}] prompt [{progress[-1]} sequences]: {prompt}"
-                )
+            # if v is None:
+            #     print(
+            #         f"Couldn't find value for [{idx}] prompt [{progress[-1]} sequences]: {prompt}"
+            #     )
             df.at[idx, f"aug_{f}"] = v
 
     return df

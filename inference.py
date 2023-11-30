@@ -4,6 +4,8 @@
 import argparse
 from src.transformer_lm_prompt import TransformerLanguageModelPrompt
 
+from langchain.chains.openai_functions import create_structured_output_chain
+from langchain.indexes import GraphIndexCreator
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, default='')

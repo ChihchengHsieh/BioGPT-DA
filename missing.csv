@@ -1,0 +1,17 @@
+,Model,Prompt Type,temperature,heartrate,resprate,o2sat,sbp,dbp,total
+0,BioGPT,plain-text,0,0,0,0,0,0,0
+1,BioGPT,report-template,0,0,0,0,0,0,0
+2,ClinicalBERT,plain-text,0,0,0,0,0,0,0
+3,ClinicalBERT,report-template,0,0,0,0,0,0,0
+4,BioClinicalBERT,plain-text,0,0,0,0,0,0,0
+5,BioClinicalBERT,report-template,124,0,0,0,0,1,125
+6,Mistral,plain-text,0,0,0,0,0,0,0
+7,Mistral,report-template,0,0,0,0,0,0,0
+8,Zephyr,plain-text,81,452,695,0,19,37,1284
+9,Zephyr,report-template,0,0,0,0,0,0,0
+10,Llama2,plain-text,0,0,0,0,0,0,0
+11,Llama2,report-template,0,0,0,0,0,0,0
+12,GPT3.5,plain-text,0,0,2,0,0,0,2
+13,GPT3.5,report-template,421,590,270,33,4,389,1707
+14,GPT4,plain-text,0,0,0,0,0,0,0
+15,GPT4,report-template,0,0,0,0,0,0,0

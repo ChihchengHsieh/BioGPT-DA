@@ -1,0 +1,14 @@
+Model,Prompt format,temperature,heartrate,resprate,o2sat,sbp,dbp,Total
+gaussian,N/A,0,0,0,0,0,0,0
+BioGPT,plain-text,0,0,0,0,0,0,0
+,report-template,0,0,0,0,0,0,0
+ClinicalBERT,plain-text,0,0,0,0,0,0,0
+,report-template,0,0,0,0,0,0,0
+BioClinicalBERT,plain-text,0,0,0,0,0,0,0
+,report-template,124,0,0,0,0,1,125
+Mistral,plain-text,0,0,0,0,0,0,0
+,report-template,0,0,0,0,0,0,0
+Zephyr,plain-text,81,452,695,0,19,37,1284
+,report-template,0,0,0,0,0,0,0
+Llama2,plain-text,0,0,0,0,0,0,0
+,report-template,0,0,0,0,0,0,0

@@ -6,7 +6,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
+from transformers import pipeline, set_seed
 import argparse
 import collections
 import os

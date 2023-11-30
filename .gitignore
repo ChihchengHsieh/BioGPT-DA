@@ -123,3 +123,4 @@ data/*/raw/*dict.txt
 
 # Checkpoints
 checkpoints/
+secret.py
