@@ -85,6 +85,7 @@ def get_generated_value(generator, prompt, min_max_v, num_return_sequences=1):
 
 def progressive_aug(generator, prompt, min_max_v, progress=[1, 5, 25, 50]):
     for p in progress:
+        # print(f"Attempting on progress {p}")
         v = get_generated_value(generator, prompt, min_max_v, num_return_sequences=p)
         if not v is None:
             return v
