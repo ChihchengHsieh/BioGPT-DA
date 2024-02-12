@@ -1,4 +1,4 @@
-import os, re, openai, torch
+import os, re, openai, torch, math
 from typing import Optional
 import pandas as pd
 
@@ -106,11 +106,9 @@ def request_documents(
 
     if DocumentSource.Wikipedia in sources:
         if top1_only:
-            raw_documents.extend(
-                WikipediaLoader(query="Atelectasis", load_max_docs=1).load()
-            )
+            raw_documents.extend(WikipediaLoader(query=lesion, load_max_docs=1).load())
         else:
-            raw_documents.extend(WikipediaLoader(query="Atelectasis").load())
+            raw_documents.extend(WikipediaLoader(query=lesion).load())
 
     # pre-process documents
     documents = text_splitter.split_documents(raw_documents)
@@ -358,6 +356,103 @@ def get_report(
         )
 
 
+def get_boolean_results_sys_p(
+    report: str,
+    identified_keywords: dict[str : list[str]],
+    responses: Optional[dict[str, str]] = None,
+):
+    if not "boolean" in identified_keywords or len(identified_keywords["boolean"]) <= 0:
+        return None
+
+    sys_p = f"You are an experienced radiologist with more than 30 years of experience. You are the most respected radiologist in the world. \n\nYou are examining a patient with the following report:\n\n{report} \n\n=========\n"
+    prompt = "Make a prediction based on your prior knowledge and on the patient's report. Please check if your prediction is in accordance with your prior knowledge. \n Ensure your answers are using following template.\n\n"
+    if responses:
+        sys_p += "According to your prior knowledge:\n\n"
+        for q, a in responses.items():
+            sys_p += f"{a}\n"
+        sys_p += """=========\n\n"""
+    # adjusted
+    # sys_p += f"\n\n\n**Report:**\n=========\n{report}\n=========\n\n\nAccording to the report {mention_prior_knowledge}above, does the patient has the following symptoms/clinical signs/laboratory data/clinical characteristics/clinical history? (Return True or False only, and separate the answer for each attribute by comma.)\n"
+    # original
+    # prompt += f"\n\n\n**Report:**\n=========\n{report}\n=========\n\n\nAccording to the report {mention_prior_knowledge}above, does the patient has the following attributes? (Return True or False only, and separate the answer for each attribute by comma.)\n"
+
+    tf_b = "{True\False}, because..."
+    for i, k in enumerate(identified_keywords["boolean"]):
+        prompt += f"{i+1}. {k}: {tf_b}\n"
+
+    res = chat_completion_with_backoff(
+        model="gpt-3.5-turbo",
+        # model="gpt-4",
+        messages=[
+            # {"role": "system", "content": "You are a helpful assistant."},
+            {
+                "role": "system",
+                "content": sys_p,
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=1.2,
+        # max_tokens=1024,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+        n=1,
+    )
+
+    res_text = res["choices"][0]["message"]["content"].strip()
+
+    values = []
+    reasons = []
+
+    for ans in [
+        ans
+        for ans in res_text.split("\n")
+        if len(ans) > 5 and ans.split(".")[0].isdigit()
+    ]:
+        a = ans[3:]  # remove number
+        # print(ans)
+        comma_idx = a.index(",") if "," in a else float("inf")
+        period_idx = a.index(".") if "." in a else float("inf")
+        if math.isinf(comma_idx) and math.isinf(period_idx):
+            idx_splitter = -1
+        else:
+            idx_splitter = min(comma_idx, period_idx)
+
+
+        assert ":" in a, f"Not containing : in the answer: {ans}"
+        after_boolean_index = a.index(":") + 2
+        assert (
+            idx_splitter >= after_boolean_index
+        ), f"found idx_splitter {idx_splitter} >= after_boolean_index {after_boolean_index}, with answer: {ans}"
+
+        boolean_ans = a[a.index(":") + 2 : idx_splitter]
+
+        if idx_splitter == -1:
+            reason = ""
+        else:
+            reason = a[idx_splitter + 1 :].strip()
+
+        values.append(boolean_ans.strip().lower() == "true")
+        reasons.append(reason)
+
+    results = {k: v for k, v in zip(identified_keywords["boolean"], values)}
+    reason_dict = {k: v for k, v in zip(identified_keywords["boolean"], reasons)}
+
+    assert len(values) == len(
+        identified_keywords["boolean"]
+    ), f"""number of predicted values ({len(values)}) isn't the same as number of keywords ({len(identified_keywords['boolean'])})
+    **Response**\n==========\n{res_text}\n
+    **
+
+
+    """
+
+    return f"SYSTEM:\n\n{sys_p}\n\nUSER:\n\n{prompt}", res, results, reason_dict
+
+
 def get_boolean_results(
     report: str,
     identified_keywords: dict[str : list[str]],
@@ -374,14 +469,22 @@ def get_boolean_results(
             prompt += f"Question: {q}\nAnswer: {a}\n"
         prompt += """=========\n"""
         mention_prior_knowledge = "and prior knowledge "
-
-    prompt += f"\n\n\n**Report:**\n=========\n{report}\n=========\n\n\nAccording to the report {mention_prior_knowledge}above, does the patient has the following attributes? (Return True or False only, and separate the answer for each attribute by comma.)\n"
+    # adjusted
+    prompt += f"\n\n\n**Report:**\n=========\n{report}\n=========\n\n\nAccording to the report {mention_prior_knowledge}above, does the patient has the following symptoms/clinical signs/laboratory data/clinical characteristics/clinical history?\n"
+    # original
+    # prompt += f"\n\n\n**Report:**\n=========\n{report}\n=========\n\n\nAccording to the report {mention_prior_knowledge}above, does the patient has the following attributes? (Return True or False only, and separate the answer for each attribute by comma.)\nExample: False,False,True,True,False,False,True,True..."
     for i, k in enumerate(identified_keywords["boolean"]):
         prompt += f"{i+1}. {k}.\n"
 
+    prompt += "Please ensure you answer all {len(identified_keywords['boolean'])} attributes with following template."
+
+    tf_b = "{True\False}"
+    for i, k in enumerate(identified_keywords["boolean"]):
+        prompt += f"{i+1}. {tf_b}"
+
     res = chat_completion_with_backoff(
-        # model="gpt-3.5-turbo",
-        model="gpt-4",
+        model="gpt-3.5-turbo",
+        # model="gpt-4",
         messages=[
             # {"role": "system", "content": "You are a helpful assistant."},
             {
@@ -397,14 +500,43 @@ def get_boolean_results(
         n=1,
     )
 
-    values = res["choices"][0]["message"]["content"].strip().split(",")
+    ##########
+    res_text = res["choices"][0]["message"]["content"].strip()
 
-    results = {
-        k: v.strip().replace(".", "") == "True"
-        for k, v in zip(identified_keywords["boolean"], values)
-    }
+    values = []
 
-    return prompt, res, results
+    for ans in [
+        ans
+        for ans in res_text.split("\n")
+        if len(ans) > 5 and ans.split(".")[0].isdigit()
+    ]:
+        print(ans)
+        a = ans[3:]  # remove number
+        values.append(a.replace(",", "").replace(".", "").strip().lower() == "true")
+
+    results = {k: v for k, v in zip(identified_keywords["boolean"], values)}
+
+    assert len(values) == len(
+        identified_keywords["boolean"]
+    ), f"""number of predicted values ({len(values)}) isn't the same as number of keywords ({len(identified_keywords['boolean'])})
+    **Response**\n==========\n{res_text}
+    """
+    #########
+    # res_text = res["choices"][0]["message"]["content"].strip()
+    # values = res_text.split(",")
+
+    # assert len(values) == len(
+    #     identified_keywords["boolean"]
+    # ), f"""number of predicted values ({len(values)}) isn't the same as number of keywords ({len(identified_keywords['boolean'])})
+    # **Response**\n==========\n{res_text}
+    # """
+
+    # results = {
+    #     k: v.strip().replace(".", "") == "True"
+    #     for k, v in zip(identified_keywords["boolean"], values)
+    # }
+
+    return prompt, res, results, None
 
 
 def get_numerical_results(
@@ -416,7 +548,7 @@ def get_numerical_results(
         not "numerical" in identified_keywords
         or len(identified_keywords["numerical"]) <= 0
     ):
-        return None
+        return None, None, None
 
     prompt = ""
 
@@ -464,23 +596,50 @@ def get_numerical_results(
     return prompt, res, results
 
 
+
+@retry(
+    retry=retry_if_exception_type(
+        (
+            openai.error.APIError,
+            openai.error.APIConnectionError,
+            openai.error.RateLimitError,
+            openai.error.ServiceUnavailableError,
+            openai.error.Timeout,
+            ValueError, # If ":" is not found.
+        )
+    ),
+    wait=wait_random_exponential(multiplier=1, max=60),
+    stop=stop_after_attempt(10),
+)
 def get_possible_values(
     data: pd.Series,
     identified_keywords: dict[str, list[str]],
     responses: Optional[dict[str, str]] = None,
+    using_sys_p: bool = True,
 ):
     report = get_report(data)
 
-    boolean_prompt, boolean_res, boolean_results = get_boolean_results(
-        report, identified_keywords, responses
+    # get_boolean_results
+    (
+        boolean_prompt,
+        boolean_res,
+        boolean_results,
+        reason_dict,
+    ) = (
+        get_boolean_results_sys_p(report, identified_keywords, responses)
+        if using_sys_p
+        else get_boolean_results(report, identified_keywords, responses)
     )
+
     numerical_prompt, numerical_res, numerical_results = get_numerical_results(
         report, identified_keywords, responses
     )
 
     results = {}
-    results.update(boolean_results)
-    results.update(numerical_results)
+    if boolean_res:
+        results.update(boolean_results)
+    if numerical_res:
+        results.update(numerical_results)
 
     return (
         {
@@ -492,6 +651,7 @@ def get_possible_values(
             "numerical": numerical_res,
         },
         results,
+        reason_dict,
     )
 
 
@@ -499,8 +659,8 @@ def chatgpt_questions_responses(questions: list[str]) -> dict[str, str]:
     res_dict = {}
     for q in questions:
         res = chat_completion_with_backoff(
-            # model="gpt-3.5-turbo",
-            model="gpt-4",
+            model="gpt-3.5-turbo",
+            # model="gpt-4",
             messages=[
                 # {"role": "system", "content": "You are a helpful assistant."},
                 {

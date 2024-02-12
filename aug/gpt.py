@@ -13,7 +13,7 @@ def get_diagnosis(data, label_cols):
     for l in diagnosis:
         diagnosis_str += f" {l},"
 
-    return diagnosis_str[:-2]
+    return diagnosis_str[:-1]
 
 
 def get_prompt(
