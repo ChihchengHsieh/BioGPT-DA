@@ -33,7 +33,6 @@ from aug.graph_doc import (
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import GraphCypherQAChain
 
-from secret import *
 
 openai.api_key = OPENAI_API_KEY
 
@@ -424,9 +423,9 @@ def get_boolean_results_sys_p(
 
         assert ":" in a, f"Not containing : in the answer: {ans}"
         after_boolean_index = a.index(":") + 2
-        assert (
-            idx_splitter >= after_boolean_index
-        ), f"found idx_splitter {idx_splitter} >= after_boolean_index {after_boolean_index}, with answer: {ans}"
+        # assert (
+        #     idx_splitter >= after_boolean_index
+        # ), f"found idx_splitter {idx_splitter} >= after_boolean_index {after_boolean_index}, with answer: {ans}"
 
         boolean_ans = a[a.index(":") + 2 : idx_splitter]
 
@@ -451,6 +450,7 @@ def get_boolean_results_sys_p(
     """
 
     return f"SYSTEM:\n\n{sys_p}\n\nUSER:\n\n{prompt}", res, results, reason_dict
+
 
 
 def get_boolean_results(
@@ -540,6 +540,63 @@ def get_boolean_results(
 
 
 def get_numerical_results(
+    report: str,
+    identified_keywords: dict[str : list[str]],
+    responses: Optional[dict[str, str]] = None,
+):
+    if (
+        not "numerical" in identified_keywords
+        or len(identified_keywords["numerical"]) <= 0
+    ):
+        return None, None, None
+
+    prompt = ""
+
+    mention_prior_knowledge = ""
+    if responses:
+        prompt += f"**Prior Knowledge:**\n=========\n"
+        for q, a in responses.items():
+            prompt += f"Question: {q}\nAnswer: {a}\n"
+        prompt += "=========\n"
+        mention_prior_knowledge = "and prior knowledge "
+
+    prompt += f"\n\n\n**Report:**\n=========\n{report}\n"
+    for i, k in enumerate(identified_keywords["numerical"]):
+        prompt += f"{k.upper()}: [MASK].\n"
+
+    prompt += "=========\n\n\n"
+
+    forcing = "Try to speculate the number instead of answering you don't know."
+    prompt += f"According to the report {mention_prior_knowledge}above, please speculate be the numerical values covered by the token [MASK]? Please return only one single numerical values (not range) for each [MASK], and separate the answers by comma. {forcing}"
+
+    res = chat_completion_with_backoff(
+        # model="gpt-3.5-turbo",
+        model="gpt-4",
+        messages=[
+            # {"role": "system", "content": "You are a helpful assistant."},
+            {
+                "role": "system",
+                "content": "You are a medical expert.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=0,
+        n=1,
+    )
+
+    values = res["choices"][0]["message"]["content"].strip().split(",")
+    values = [v.strip().replace(".", "") for v in values]
+    values = [int(v) if v.isdecimal() else None for v in values]
+
+    results = {k: v for k, v in zip(identified_keywords["numerical"], values)}
+
+    return prompt, res, results
+
+
+def get_numerical_results_sys_p(
     report: str,
     identified_keywords: dict[str : list[str]],
     responses: Optional[dict[str, str]] = None,
