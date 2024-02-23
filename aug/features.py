@@ -420,7 +420,6 @@ def get_boolean_results_sys_p(
         else:
             idx_splitter = min(comma_idx, period_idx)
 
-
         assert ":" in a, f"Not containing : in the answer: {ans}"
         after_boolean_index = a.index(":") + 2
         # assert (
@@ -450,7 +449,6 @@ def get_boolean_results_sys_p(
     """
 
     return f"SYSTEM:\n\n{sys_p}\n\nUSER:\n\n{prompt}", res, results, reason_dict
-
 
 
 def get_boolean_results(
@@ -653,7 +651,6 @@ def get_numerical_results_sys_p(
     return prompt, res, results
 
 
-
 @retry(
     retry=retry_if_exception_type(
         (
@@ -662,7 +659,8 @@ def get_numerical_results_sys_p(
             openai.error.RateLimitError,
             openai.error.ServiceUnavailableError,
             openai.error.Timeout,
-            ValueError, # If ":" is not found.
+            ValueError,  # If ":" is not found.
+            AssertionError,
         )
     ),
     wait=wait_random_exponential(multiplier=1, max=60),
