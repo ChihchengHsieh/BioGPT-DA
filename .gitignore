@@ -124,3 +124,7 @@ data/*/raw/*dict.txt
 # Checkpoints
 checkpoints/
 secret.py
+
+log.md
+generated/
+deprecated/
