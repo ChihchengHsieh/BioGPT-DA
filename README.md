@@ -3,7 +3,7 @@ MMTF is in another [anonymised repo](https://anonymous.4open.science/r/MMTF-0071
 
 
 # Motivation
-The motivation to augment clinical dataset is from the attempt of multimodal contrastive learning from [Best of Both Worlds: Multimodal Contrastive Learning with Tabular and Imaging Data](https://arxiv.org/abs/2303.14080), where we employed the same strategy but found no significant improvement when adopting clinical features on REFLACX dataset, as shown in the following Table. We believe this behaviour is attributed to lack of clinical features, when we only have 9 clinical features available on REFLACX dataset, and the work used 120 clinical features from UK Biobank.
+The motivation to augment clinical dataset is from the attempt of multimodal contrastive learning from [[Best of Both Worlds: Multimodal Contrastive Learning with Tabular and Imaging Data]](https://arxiv.org/abs/2303.14080), where we employed the same strategy but found no significant improvement when adopting clinical features on REFLACX dataset, as shown in the following Table. We believe this behaviour is attributed to lack of clinical features, when we only have 9 clinical features available on REFLACX dataset, and the work used 120 clinical features from UK Biobank.
 
 
 |Weights|Deployement Strategy|F1|Precision|Accuracy|Recall|AUC|
