@@ -23,10 +23,10 @@ The motivation to augment clinical dataset is from the attempt of multimodal con
 |:---|:---|---:|---:|
 |Mutlimodal Contrastive Learning|Linear Evaluation|0.0787|0.4175|
 |Mutlimodal Contrastive Learning|Linear Evaluation <br> (fix first 2 layers)|0.1065|0.4989|
-|Mutlimodal Contrastive Learning|Fine-tuned|Serious Overfitting||
+|Mutlimodal Contrastive Learning|Fine-tuned|Serious<br>Overfitting||
 |ImageNet|Linear Evaluation|0.0970|0.4153|
 |ImageNet|Linear Evaluation <br> (fix first 2 layers)|**0.1142**|**0.5371**|
-|ImageNet|Fine-tuned|Serious Overfitting||
+|ImageNet|Fine-tuned|Serious<br>Overfitting||
 |Random Initialisation|N/A|*0.1125*|*0.4268*|
 
 {Context to add after publication}
