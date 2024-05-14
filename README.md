@@ -3,9 +3,9 @@ MMTF is in another [anonymised repo](https://anonymous.4open.science/r/MMTF-0071
 
 
 # Motivation
-The motivation to augment clinical dataset is from the attempt of multimodal contrastive learning from [[Best of Both Worlds: Multimodal Contrastive Learning with Tabular and Imaging Data]](https://arxiv.org/abs/2303.14080), where we employed the same strategy but found no significant improvement when adopting clinical features on REFLACX dataset, as shown in the following Table. We believe this behaviour is attributed to lack of clinical features, when we only have 9 clinical features available on REFLACX dataset, and the work used 120 clinical features from UK Biobank.
+The motivation to augment clinical dataset is from the attempt of multimodal contrastive learning from [[Best of Both Worlds: Multimodal Contrastive Learning with Tabular and Imaging Data]](https://arxiv.org/abs/2303.14080), where we employed the same strategy but found no significant improvement on both classification and detection tasks, as shown in the following tables. We believe this behaviour is attributed to lack of clinical features, when we only have 9 clinical features available on REFLACX dataset, and the work used 120 clinical features from UK Biobank.
 
-
+## Classification (CheXpert)
 |Weights|Deployement Strategy|F1|Precision|Accuracy|Recall|AUC|
 |:---|:---|---:|---:|---:|---:|---:|
 |Mutlimodal Contrastive Learning|Linear Evaluation|0.3844|0.6583|0.8808|0.2714|0.6245|
@@ -18,5 +18,15 @@ The motivation to augment clinical dataset is from the attempt of multimodal con
 |ImageNet|Fine-tuned|0.4872|0.6741|0.8900|0.3814|0.6760|
 |Random Initialisation|N/A|0.3524|**0.7276**|0.8829|0.2325|0.6094|
 
+## Detection (REFLACX)
+|Weights|Deployement Strategy|mAP|mAR|
+|:---|:---|---:|---:|
+|Mutlimodal Contrastive Learning|Linear Evaluation|0.0787|0.4175|
+|Mutlimodal Contrastive Learning|Linear Evaluation <br> (fix first 2 layers)|0.1065|0.4989|
+|Mutlimodal Contrastive Learning|Fine-tuned|Serious Overfitting||
+|ImageNet|Linear Evaluation|0.0970|0.4153|
+|ImageNet|Linear Evaluation <br> (fix first 2 layers)|**0.1142**|**0.5371**|
+|ImageNet|Fine-tuned|Serious Overfitting||
+|Random Initialisation|N/A|*0.1125*|*0.4268*|
 
 {Context to add after publication}
